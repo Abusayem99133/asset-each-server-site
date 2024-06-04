@@ -1,5 +1,3 @@
-// XF1J3cj3UySySniK
-// asset-each
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const express = require("express");
 const app = express();
@@ -28,6 +26,23 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const employeeCollection = client.db("assetEachDB").collection("users");
+
+    app.post("/users", async (req, res) => {
+      const users = req.body;
+      const query = { email: users.email };
+      const existingUser = await employeeCollection.findOne(query);
+      if (existingUser) {
+        return res.send({
+          message: "user already exists",
+          insertedId: null,
+        });
+      }
+      const result = await employeeCollection.insertOne(users);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -35,7 +50,7 @@ async function run() {
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
