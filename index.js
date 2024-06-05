@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -27,22 +27,38 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
 
-    const employeeCollection = client.db("assetEachDB").collection("users");
+    const usersCollection = client.db("assetEachDB").collection("users");
+
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
 
     app.post("/users", async (req, res) => {
       const users = req.body;
       const query = { email: users.email };
-      const existingUser = await employeeCollection.findOne(query);
+      const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
         return res.send({
           message: "user already exists",
           insertedId: null,
         });
       }
-      const result = await employeeCollection.insertOne(users);
+      const result = await usersCollection.insertOne(users);
       res.send(result);
     });
 
+    // app.patch("/users/admin/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   const filter = { _id: new ObjectId(id) };
+    //   const updatedDoc = {
+    //     $set: {
+    //       role: "HR",
+    //     },
+    //   };
+    //   const result = await usersCollection.updateOne(filter, updatedDoc);
+    //   res.send(result);
+    // });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
