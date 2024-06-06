@@ -28,6 +28,7 @@ async function run() {
     await client.connect();
 
     const usersCollection = client.db("assetEachDB").collection("users");
+
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -35,7 +36,22 @@ async function run() {
       });
       res.send({ token });
     });
-
+    const verifyToken = (req, res, next) => {
+      console.log(req, headers);
+      next();
+    };
+    app.verifyHrManager = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      const isManager = user?.role === "hr";
+      if (!isManager) {
+        return res.status(403).send({
+          message: "forbidden access",
+        });
+      }
+      next();
+    };
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
@@ -54,7 +70,10 @@ async function run() {
       const result = await usersCollection.insertOne(users);
       res.send(result);
     });
-
+    app.post("/employeeUser", async (req, res) => {
+      const user = req.body;
+      console.log("new user", user);
+    });
     // app.patch("/users/admin/:id", async (req, res) => {
     //   const id = req.params.id;
     //   const filter = { _id: new ObjectId(id) };
