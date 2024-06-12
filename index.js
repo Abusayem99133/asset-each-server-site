@@ -27,7 +27,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const usersCollection = client.db("assetEachDB").collection("users");
     const paymentCollection = client.db("assetEachDB").collection("payments");
@@ -88,10 +88,6 @@ async function run() {
     //   const result = await usersCollection.updateOne(filter, updatedDoc);
     //   res.send(result);
     // });
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    // payment method system under the api
-
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -121,6 +117,9 @@ async function run() {
 
       res.send({ paymentResult });
     });
+    // Send a ping to confirm a successful connection
+    // await client.db("admin").command({ ping: 1 });
+    // payment method system under the api
 
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
