@@ -4,6 +4,8 @@ const app = express();
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -28,6 +30,7 @@ async function run() {
     await client.connect();
 
     const usersCollection = client.db("assetEachDB").collection("users");
+    const paymentCollection = client.db("assetEachDB").collection("payments");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -87,6 +90,38 @@ async function run() {
     // });
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
+    // payment method system under the api
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log(amount, "amount in site the menu");
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+    app.get("/payments/:email", verifyToken, async (req, res) => {
+      const query = { email: req.params.email };
+      if (req.params.email !== req.decoded.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const paymentResult = await paymentCollection.insertOne(payment);
+      // carefully delete each item from the cart
+      console.log("payment info", payment);
+
+      res.send({ paymentResult });
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
