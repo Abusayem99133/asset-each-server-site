@@ -31,6 +31,8 @@ async function run() {
 
     const usersCollection = client.db("assetEachDB").collection("users");
     const paymentCollection = client.db("assetEachDB").collection("payments");
+    const teamCollection = client.db("assetEachDB").collection("teams");
+    const assetsCollection = client.db("assetEachDB").collection("assets");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -55,11 +57,21 @@ async function run() {
       }
       next();
     };
-    app.get("/users", async (req, res) => {
-      const result = await usersCollection.find().toArray();
+    app.get("/users/:email", async (req, res) => {
+      const userEmail = req.params.email;
+      const result = await usersCollection.findOne({ email: userEmail });
       res.send(result);
     });
+    app.get("/users", async (req, res) => {
+      const { status } = req.query;
+      const filters = {};
+      if (status) {
+        filters.status = status;
+      }
+      const result = await usersCollection.find(filters).toArray();
 
+      res.send(result);
+    });
     app.post("/users", async (req, res) => {
       const users = req.body;
       const query = { email: users.email };
