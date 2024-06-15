@@ -77,17 +77,7 @@ async function run() {
       const user = req.body;
       console.log("new user", user);
     });
-    // app.patch("/users/admin/:id", async (req, res) => {
-    //   const id = req.params.id;
-    //   const filter = { _id: new ObjectId(id) };
-    //   const updatedDoc = {
-    //     $set: {
-    //       role: "HR",
-    //     },
-    //   };
-    //   const result = await usersCollection.updateOne(filter, updatedDoc);
-    //   res.send(result);
-    // });
+
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
@@ -112,7 +102,7 @@ async function run() {
     app.post("/payments", async (req, res) => {
       const payment = req.body;
       const paymentResult = await paymentCollection.insertOne(payment);
-      // carefully delete each item from the cart
+
       console.log("payment info", payment);
 
       res.send({ paymentResult });
