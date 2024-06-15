@@ -85,10 +85,211 @@ async function run() {
       const result = await usersCollection.insertOne(users);
       res.send(result);
     });
-    app.post("/employeeUser", async (req, res) => {
-      const user = req.body;
-      console.log("new user", user);
+    app.put("/status_update/:id", async (req, res) => {
+      const userId = req.params.id;
+      const { owner } = req.body;
+      console.log(owner);
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).send({
+          message: "Invalid user Id",
+        });
+      }
+      const result = await usersCollection.findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        {
+          $set: {
+            status: "accepted",
+            owner: owner,
+          },
+        }
+      );
+
+      res.send(result);
     });
+    app.delete("/reject_request/:id", async (req, res) => {
+      const userId = req.params.id;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).send({
+          message: "Invalid user Id",
+        });
+      }
+      const result = await usersCollection.findOneAndDelete({
+        _id: new ObjectId(userId),
+      });
+
+      res.send(result);
+    });
+    // team functions
+    app.get("/teams", async (req, res) => {
+      const { status } = req.query;
+      const filters = {};
+      if (status) {
+        filters.status = status;
+      }
+      const result = await teamCollection.find(filters).toArray();
+
+      res.send(result);
+    });
+
+    app.post("/teams", async (req, res) => {
+      const { status } = req.query;
+      const filters = {};
+      if (status) {
+        filters.status = status;
+      }
+      const result = await teamCollection.find(filters).toArray();
+
+      res.send(result);
+    });
+    // assets functions
+
+    app.get("/assets/productTypes", async (req, res) => {
+      const result = await assetsCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              uniqueProductTypes: { $addToSet: "$productType" },
+            },
+          },
+          {
+            $project: {
+              _id: 0,
+              uniqueProductTypes: 1,
+            },
+          },
+        ])
+        .toArray();
+
+      const uniqueProductTypes =
+        result.length > 0 ? result[0].uniqueProductTypes : [];
+
+      res.send(uniqueProductTypes);
+    });
+
+    app.get("/assets", async (req, res) => {
+      const { productType, searchTerm } = req.query;
+      const filters = {};
+      if (productType) {
+        filters.productType = productType;
+      }
+
+      if (searchTerm) {
+        filters.productName = { $regex: searchTerm, $options: "i" };
+      }
+
+      const result = await assetsCollection.find(filters).toArray();
+
+      res.send(result);
+    });
+    app.post("/assets", async (req, res) => {
+      const assetsBody = req.body;
+      const result = await assetsCollection.insertOne(assetsBody);
+
+      res.send(result);
+    });
+
+    app.put("/assets/:id", async (req, res) => {
+      const userId = req.params.id;
+      console.log(userId);
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).send({
+          message: "Invalid user Id",
+        });
+      }
+      const result = await assetsCollection.findOneAndUpdate(
+        { _id: new ObjectId(userId) },
+        {
+          $set: {
+            status: "approved",
+          },
+        }
+      );
+
+      res.send(result);
+    });
+
+    app.delete("/assets/:id", async (req, res) => {
+      const userId = req.params.id;
+      if (!ObjectId.isValid(userId)) {
+        return res.status(400).send({
+          message: "Invalid user Id",
+        });
+      }
+      const result = await assetsCollection.findOneAndDelete({
+        _id: new ObjectId(userId),
+      });
+
+      res.send(result);
+    });
+
+    app.put("/assets/request/:id", async (req, res) => {
+      const assetId = req.params.id;
+      if (!ObjectId.isValid(assetId)) {
+        return res.status(400).send({ message: "Invalid asset ID" });
+      }
+
+      const result = await assetsCollection.findOneAndUpdate(
+        { _id: new ObjectId(assetId) },
+        { $set: { requestStatus: "pending" } }
+      );
+
+      res.send(result);
+    });
+
+    app.put("/assets/cancel/:id", async (req, res) => {
+      const assetId = req.params.id;
+      if (!ObjectId.isValid(assetId)) {
+        return res.status(400).send({ message: "Invalid asset ID" });
+      }
+
+      const result = await assetsCollection.findOneAndUpdate(
+        { _id: new ObjectId(assetId), requestStatus: "pending" },
+        { $set: { requestStatus: "cancelled" } }
+      );
+
+      res.send(result);
+    });
+
+    app.put("/assets/return/:id", async (req, res) => {
+      const assetId = req.params.id;
+      if (!ObjectId.isValid(assetId)) {
+        return res.status(400).send({ message: "Invalid asset ID" });
+      }
+
+      const result = await assetsCollection.findOneAndUpdate(
+        {
+          _id: new ObjectId(assetId),
+          requestStatus: "approved",
+          assetType: "returnable",
+        },
+        { $set: { requestStatus: "returned" } }
+      );
+
+      // Optionally increment quantity (if your schema supports it)
+      await assetsCollection.updateOne(
+        { _id: new ObjectId(assetId) },
+        { $inc: { quantity: 1 } }
+      );
+
+      res.send(result);
+    });
+
+    // my employee list
+    app.get("/my_employees/:email", async (req, res) => {
+      const myEmail = req.params.email;
+      const filters = {};
+      if (myEmail) {
+        filters.owner = myEmail;
+      }
+      const result = await usersCollection.find(filters).toArray();
+
+      res.send(result);
+    });
+    // app.post("/employeeUser", async (req, res) => {
+    //   const user = req.body;
+    //   console.log("new user", user);
+    // });
 
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
