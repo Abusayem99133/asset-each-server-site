@@ -286,10 +286,6 @@ async function run() {
 
       res.send(result);
     });
-    // app.post("/employeeUser", async (req, res) => {
-    //   const user = req.body;
-    //   console.log("new user", user);
-    // });
 
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
